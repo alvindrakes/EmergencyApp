@@ -8,11 +8,16 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
+import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Looper;
 import android.provider.ContactsContract;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -21,6 +26,7 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.ExtractedText;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -57,6 +63,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.vision.text.Line;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
@@ -65,7 +72,12 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,26 +95,24 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private Button mLogout, mRequest, mSettings, mHistory;
 
     private LatLng pickupLocation;
-
     private Boolean requestBol = false;
-
     private Marker pickupMarker;
-
     private SupportMapFragment mapFragment;
-
     private String destination, requestService;
-
     private LatLng destinationLatLng;
-
     private LinearLayout mDriverInfo;
-
     private ImageView mDriverProfileImage;
-
     private TextView mDriverName, mDriverPhone, mDriverCar;
-
     private RadioGroup mRadioGroup;
-
     private RatingBar mRatingBar;
+
+    // audio
+    private MediaRecorder mRecorder;
+    private String mFilename = null;
+    private static String LOG_TAG = "Audio_recording";
+    private int AUDIO_CODE = 1;
+    private int STORAGE_CODE = 1;
+    private StorageReference mStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +136,10 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         mDriverCar = (TextView) findViewById(R.id.driverCar);
 
         mRatingBar = (RatingBar) findViewById(R.id.ratingBar);
+
+        mFilename = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFilename += "/recorded_audio.3gp";
+        mStorage = FirebaseStorage.getInstance().getReference();
 
 //        mRadioGroup = (RadioGroup) findViewById(R.id.radioGroup);
 //        mRadioGroup.check(R.id.UberX);
@@ -155,33 +169,41 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
                 }else{
-                    int selectId = mRadioGroup.getCheckedRadioButtonId();
+//                    int selectId = mRadioGroup.getCheckedRadioButtonId();
+//
+//                    final RadioButton radioButton = (RadioButton) findViewById(selectId);
+//
+//                    if (radioButton.getText() == null){
+//                        return;
+//                    }
+//
+//                    requestService = radioButton.getText().toString();
 
-                    final RadioButton radioButton = (RadioButton) findViewById(selectId);
+                    // record audio for limited amount of time
+                    requestAudioPermissions();
+//                        requestPermission();
+//                    }
 
-                    if (radioButton.getText() == null){
-                        return;
-                    }
 
-                    requestService = radioButton.getText().toString();
+//                    requestBol = true;
+//
+//                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+//
+//                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
+//                    GeoFire geoFire = new GeoFire(ref);
+//                    geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+//
+//                    pickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+//                    pickupMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("Pickup Here").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_pickup)));
+//
+//                    mRequest.setText("Getting your Driver....");
 
-                    requestBol = true;
-
-                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
-                    GeoFire geoFire = new GeoFire(ref);
-                    geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
-
-                    pickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                    pickupMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("Pickup Here").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_pickup)));
-
-                    mRequest.setText("Getting your Driver....");
-
-                    getClosestDriver();
+                    // getClosestDriver();
                 }
             }
         });
+
+
         mSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -210,6 +232,104 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
     }
+
+//    private boolean permissionAlreadyGranted() {
+//
+//        int Audio_result = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+////        int Storage_result = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//
+//        if (Audio_result == PackageManager.PERMISSION_GRANTED)
+//            return true;
+//
+//        return false;
+//    }
+//
+//    private void requestPermission() {
+//
+//        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
+//
+//        }
+//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_CODE);
+//    }
+
+
+//    private void openSettingsDialog() {
+//
+//        AlertDialog.Builder builder = new AlertDialog.Builder(CustomerMapActivity.this);
+//        builder.setTitle("Required Permissions");
+//        builder.setMessage("This app require permission to use awesome feature. Grant them in app settings.");
+//        builder.setPositiveButton("Take Me To SETTINGS", new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//                dialog.cancel();
+//                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                Uri uri = Uri.fromParts("package", getPackageName(), null);
+//                intent.setData(uri);
+//                startActivityForResult(intent, 101);
+//            }
+//        });
+//        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//                dialog.cancel();
+//            }
+//        });
+//        builder.show();
+//
+//    }
+
+
+    private void startRecording() {
+        mRecorder = new MediaRecorder();
+        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mRecorder.setOutputFile(mFilename);
+        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        try {
+            mRecorder.prepare();
+            mRecorder.setMaxDuration(8000);
+            mRecorder.prepare();
+            mRecorder.start();
+
+            mRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
+                @Override
+                public void onInfo(MediaRecorder mr, int what, int extra) {
+                    if(what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED){
+                        Toast.makeText(CustomerMapActivity.this, "Recording stops. Limit reached", Toast.LENGTH_LONG).show();
+                        mr.stop();
+                        mr.release();
+                        mRecorder = null;
+
+                        uploadAudioFirebase();
+                    }
+                }
+            });
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "prepare() failed");
+        }
+
+        // mRecorder.start();
+    }
+
+    private void stopRecording() {
+
+    }
+
+    private void uploadAudioFirebase() {
+
+        StorageReference filepath = mStorage.child("Audio").child("new_audio,3gp");
+        Uri uri = Uri.fromFile(new File(mFilename));
+
+        filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Toast.makeText(getApplicationContext(), "Audio uploaded to firebase", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
     private int radius = 1;
     private Boolean driverFound = false;
     private String driverFoundID;
@@ -537,20 +657,64 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         }
     }
 
+    private final int MY_PERMISSIONS_RECORD_AUDIO = 1;
+
+    private int requestAudioPermissions() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            //When permission is not granted by user, show them message why this permission is needed.
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECORD_AUDIO)) {
+                Toast.makeText(this, "Please grant permissions to record audio", Toast.LENGTH_LONG).show();
+
+                //Give user option to still opt-in the permissions
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_RECORD_AUDIO);
+
+            } else {
+                // Show user dialog to grant permission to record audio
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_RECORD_AUDIO);
+            }
+        }
+        //If permission is granted, then go ahead recording audio
+        else if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            return 1;
+        }
+        return 0;
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch(requestCode){
-            case 1:{
-                if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                    if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+        switch (requestCode) {
+            case 1: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                         mMap.setMyLocationEnabled(true);
                     }
-                } else{
-                    Toast.makeText(getApplicationContext(), "Please provide the permission", Toast.LENGTH_LONG).show();
+
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        startRecording();
+                    }
+
+
+//                } else{
+//                    Toast.makeText(getApplicationContext(), "Please provide the permission", Toast.LENGTH_LONG).show();
+//                    boolean showRationale = shouldShowRequestPermissionRationale( Manifest.permission.ACCESS_FINE_LOCATION );
+//                    if (! showRationale) {
+//                        openSettingsDialog();
+//                    }
+//                }
+                    break;
                 }
-                break;
             }
         }
     }

@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
 
     <application
         android:allowBackup="true"
@@ -35,6 +38,7 @@
             android:value="@string/google_maps_key" />
 
         <activity
+            android:screenOrientation="portrait"
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps" />
 
@@ -42,21 +46,34 @@
             android:name=".onAppKilled"
             android:stopWithTask="false" />
 
-        <activity android:name=".MainActivity">
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".MainActivity">
         </activity>
-        <activity android:name=".DriverLoginActivity" />
-        <activity android:name=".CustomerLoginActivity">
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".DriverLoginActivity" />
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".CustomerLoginActivity">
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
         </activity>
         <activity
+            android:screenOrientation="portrait"
             android:name=".DriverMapActivity"
             android:label="@string/title_activity_driver_map" />
-        <activity android:name=".CustomerMapActivity" />
-        <activity android:name=".CustomerSettingsActivity" />
-        <activity android:name=".DriverSettingsActivity" />
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".CustomerMapActivity" />
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".CustomerSettingsActivity" />
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".DriverSettingsActivity" />
     </application>
 
 </manifest>
