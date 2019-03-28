@@ -216,20 +216,20 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                     }
 
 
-//                    requestBol = true;
-//
-//                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-//
-//                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
-//                    GeoFire geoFire = new GeoFire(ref);
-//                    geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
-//
-//                    pickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-//                    pickupMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("Pickup Here").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_pickup)));
-//
-//                    mRequest.setText("Getting your Driver....");
+                    requestBol = true;
 
-                    // getClosestDriver();
+                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
+                    GeoFire geoFire = new GeoFire(ref);
+                    geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+
+                    pickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    pickupMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("Pickup Here").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_pickup)));
+
+                    mRequest.setText("Getting Help now....");
+
+                   //  getClosestDriver(); // this should be gettin closest em,ergency help
                 }
             }
         });
@@ -263,25 +263,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
     }
-
-//    private boolean permissionAlreadyGranted() {
-//
-//        int Audio_result = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
-////        int Storage_result = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//
-//        if (Audio_result == PackageManager.PERMISSION_GRANTED)
-//            return true;
-//
-//        return false;
-//    }
-//
-//    private void requestPermission() {
-//
-//        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
-//
-//        }
-//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_CODE);
-//    }
 
 
 //    private void openSettingsDialog() {
@@ -340,11 +321,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                 public void onInfo(MediaRecorder mr, int what, int extra) {
                     if(what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED){
                         Toast.makeText(CustomerMapActivity.this, "Recording stops. Limit reached", Toast.LENGTH_LONG).show();
-                        mr.stop();
-                        mr.release();
-                        mRecorder = null;
-
-                        uploadAudioFirebase();
+                        stopRecording(mr);
                     }
                 }
             });
@@ -355,8 +332,12 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         // mRecorder.start();
     }
 
-    private void stopRecording() {
+    private void stopRecording(MediaRecorder mediaRecorder) {
+        mediaRecorder.stop();
+        mediaRecorder.release();
+        mRecorder = null;
 
+        uploadAudioFirebase();
     }
 
     private void uploadAudioFirebase() {
@@ -369,7 +350,10 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+
                 Toast.makeText(getApplicationContext(), "Audio uploaded to firebase", Toast.LENGTH_SHORT).show();
+
+                String audioFileUri = taskSnapshot.getUploadSessionUri().toString();
             }
         });
     }
