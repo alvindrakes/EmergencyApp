@@ -75,6 +75,14 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.MultiplePermissionsReport;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +91,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class CustomerMapActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -110,8 +120,8 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private MediaRecorder mRecorder;
     private String mFilename = null;
     private static String LOG_TAG = "Audio_recording";
-    private int AUDIO_CODE = 1;
-    private int STORAGE_CODE = 1;
+    private int AUDIO_CODE = 0;
+    private int STORAGE_CODE = 0;
     private StorageReference mStorage;
 
     @Override
@@ -180,9 +190,30 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 //                    requestService = radioButton.getText().toString();
 
                     // record audio for limited amount of time
-                    requestAudioPermissions();
-//                        requestPermission();
-//                    }
+                    Toast.makeText(CustomerMapActivity.this, "Button is clicked", Toast.LENGTH_SHORT).show();
+                    Dexter.withActivity(CustomerMapActivity.this)
+                            .withPermission(Manifest.permission.RECORD_AUDIO)
+                            .withListener(new PermissionListener() {
+                                @Override public void onPermissionGranted(PermissionGrantedResponse response) {
+                                    AUDIO_CODE = 1;
+                                    Dexter.withActivity(CustomerMapActivity.this)
+                                            .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                            .withListener(new PermissionListener() {
+                                                @Override public void onPermissionGranted(PermissionGrantedResponse response) { STORAGE_CODE = 1; }
+                                                @Override public void onPermissionDenied(PermissionDeniedResponse response) { Toast.makeText(CustomerMapActivity.this, "Please grant permission", Toast.LENGTH_SHORT).show();}
+                                                @Override public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
+                                            }).check();
+                                }
+                                @Override public void onPermissionDenied(PermissionDeniedResponse response) { Toast.makeText(CustomerMapActivity.this, "Please grant permission", Toast.LENGTH_SHORT).show();}
+                                @Override public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
+                            }).check();
+
+
+                    if (AUDIO_CODE == 1 && STORAGE_CODE == 1) {
+                        startRecording();
+                    } else {
+                        Toast.makeText(CustomerMapActivity.this, "Functions are not available", Toast.LENGTH_SHORT).show();
+                    }
 
 
 //                    requestBol = true;
@@ -280,6 +311,19 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
     private void startRecording() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(CustomerMapActivity.this)
+                .setTitle("EMERGENCY AUDIO")
+                .setMessage("Tell us what emergency are you facing now");
+        final AlertDialog alert = builder.create();
+        alert.show();
+        final Timer timer2 = new Timer();
+        timer2.schedule(new TimerTask() {
+            public void run() {
+                alert.dismiss();
+                timer2.cancel(); //this will cancel the timer of the system
+            }
+        }, 8000); // the timer will count 5 seconds....
+
         mRecorder = new MediaRecorder();
         mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -287,7 +331,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 
         try {
-            mRecorder.prepare();
             mRecorder.setMaxDuration(8000);
             mRecorder.prepare();
             mRecorder.start();
@@ -318,8 +361,10 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
     private void uploadAudioFirebase() {
 
-        StorageReference filepath = mStorage.child("Audio").child("new_audio,3gp");
+        String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         Uri uri = Uri.fromFile(new File(mFilename));
+
+        StorageReference filepath = mStorage.child("Audio").child(userUid).child(mFilename);
 
         filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
