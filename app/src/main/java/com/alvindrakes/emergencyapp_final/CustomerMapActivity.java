@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Looper;
@@ -63,8 +64,21 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.gms.vision.text.Line;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
+import com.google.api.services.speech.v1beta1.Speech;
+import com.google.api.services.speech.v1beta1.SpeechRequestInitializer;
+import com.google.api.services.speech.v1beta1.model.RecognitionAudio;
+import com.google.api.services.speech.v1beta1.model.RecognitionConfig;
+import com.google.api.services.speech.v1beta1.model.SpeechRecognitionResult;
+import com.google.api.services.speech.v1beta1.model.SyncRecognizeRequest;
+import com.google.api.services.speech.v1beta1.model.SyncRecognizeResponse;
+import com.google.common.primitives.Bytes;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -84,8 +98,13 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.karumi.dexter.listener.single.PermissionListener;
 
+import org.apache.commons.io.IOUtils;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,6 +112,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static org.apache.commons.io.IOUtils.toByteArray;
 
 public class CustomerMapActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -123,6 +144,12 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private int AUDIO_CODE = 0;
     private int STORAGE_CODE = 0;
     private StorageReference mStorage;
+    private String base64EncodedData;
+    private StorageReference filepath = null;
+    private final static String RECORD_TAG = "transcribing audio phase";
+
+    // google speech to text
+    private final String CLOUD_API_KEY = "AIzaSyBOdewjvLRdSX1KCfds3jMUX9ZUV9kMrPk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,7 +175,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         mRatingBar = (RatingBar) findViewById(R.id.ratingBar);
 
         mFilename = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFilename += "/recorded_audio.3gp";
+        mFilename += "/recorded_audio.raw";
         mStorage = FirebaseStorage.getInstance().getReference();
 
 //        mRadioGroup = (RadioGroup) findViewById(R.id.radioGroup);
@@ -190,7 +217,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 //                    requestService = radioButton.getText().toString();
 
                     // record audio for limited amount of time
-                    Toast.makeText(CustomerMapActivity.this, "Button is clicked", Toast.LENGTH_SHORT).show();
                     Dexter.withActivity(CustomerMapActivity.this)
                             .withPermission(Manifest.permission.RECORD_AUDIO)
                             .withListener(new PermissionListener() {
@@ -243,25 +269,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                 return;
             }
         });
-
-
-//        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
-//                getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
-//
-//        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-//            @Override
-//            public void onPlaceSelected(Place place) {
-//                // TODO: Get info about the selected place.
-//                destination = place.getName().toString();
-//                destinationLatLng = place.getLatLng();
-//            }
-//            @Override
-//            public void onError(Status status) {
-//                // TODO: Handle the error.
-//            }
-//        });
-
-
     }
 
 
@@ -307,7 +314,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
         mRecorder = new MediaRecorder();
         mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
         mRecorder.setOutputFile(mFilename);
         mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 
@@ -339,13 +346,19 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
         uploadAudioFirebase();
     }
+//backup code
+    // convert audio to base64 format
+//                final Uri audioFileUri = taskSnapshot.getUploadSessionUri();
+//                Task<Uri> audioUrlTask = taskSnapshot.getStorage().getDownloadUrl();
+//                while (!audioUrlTask.isSuccessful());
+//                Uri downloadUrl = audioUrlTask.getResult();
 
     private void uploadAudioFirebase() {
 
         String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         Uri uri = Uri.fromFile(new File(mFilename));
 
-        StorageReference filepath = mStorage.child("Audio").child(userUid).child(mFilename);
+        filepath = mStorage.child("Audio").child(userUid).child(mFilename);
 
         filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
@@ -353,11 +366,122 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
                 Toast.makeText(getApplicationContext(), "Audio uploaded to firebase", Toast.LENGTH_SHORT).show();
 
-                String audioFileUri = taskSnapshot.getUploadSessionUri().toString();
+                filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                    @Override
+                    public void onSuccess(Uri uri) {
+                        final String downloadUrl = uri.toString();
+                        Log.d(RECORD_TAG, "Download url:" + downloadUrl);  // download url is correct !!!!
+
+                        AsyncTask.execute(() -> {
+                            filepath.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                                @Override
+                                public void onSuccess(byte[] bytes) {
+                                    Speech speechService = new Speech.Builder(
+                                            AndroidHttp.newCompatibleTransport(),
+                                            new AndroidJsonFactory(),
+                                            null
+                                    ).setSpeechRequestInitializer(
+                                            new SpeechRequestInitializer(CLOUD_API_KEY))
+                                            .build();
+                                    RecognitionConfig recognitionConfig = new RecognitionConfig();
+                                    recognitionConfig.setLanguageCode("en-US");
+                                    RecognitionAudio recognitionAudio = new RecognitionAudio();
+                                    recognitionAudio.setContent(bytes.toString());
+
+                                    // Create request
+                                    SyncRecognizeRequest request = new SyncRecognizeRequest();
+                                    request.setConfig(recognitionConfig);
+                                    request.setAudio(recognitionAudio);
+
+                                    // Generate response
+                                    SyncRecognizeResponse response = null;
+                                    try {
+                                        response = speechService.speech()
+                                                .syncrecognize(request)
+                                                .execute();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                        Log.d(RECORD_TAG, "Sync regconize response not working ");
+                                    }
+
+                                    // Extract transcript
+                                    SpeechRecognitionResult result = response.getResults().get(0);
+                                    final String transcript = result.getAlternatives().get(0)
+                                            .getTranscript();
+
+                                    Log.d(RECORD_TAG, "Transcribed text: " + transcript);
+                                }
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception exception) {
+                                    Log.d(RECORD_TAG, "file bytes are not downloaded   ");
+                                }
+                            });
+
+
+//                            try {
+//
+//                                byte[] audioData = getBytesFromInputStream(stream);
+//
+//                                Speech speechService = new Speech.Builder(
+//                                        AndroidHttp.newCompatibleTransport(),
+//                                        new AndroidJsonFactory(),
+//                                        null
+//                                ).setSpeechRequestInitializer(
+//                                        new SpeechRequestInitializer(CLOUD_API_KEY))
+//                                        .build();
+//                                RecognitionConfig recognitionConfig = new RecognitionConfig();
+//                                recognitionConfig.setLanguageCode("en-US");
+//                                RecognitionAudio recognitionAudio = new RecognitionAudio();
+//                                recognitionAudio.setContent(audioData.toString());
+//
+//                                // Create request
+//                                SyncRecognizeRequest request = new SyncRecognizeRequest();
+//                                request.setConfig(recognitionConfig);
+//                                request.setAudio(recognitionAudio);
+//
+//                                // Generate response
+//                                SyncRecognizeResponse response = null;
+//                                try {
+//                                    response = speechService.speech()
+//                                            .syncrecognize(request)
+//                                            .execute();
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//
+//                                // Extract transcript
+//                                SpeechRecognitionResult result = response.getResults().get(0);
+//                                final String transcript = result.getAlternatives().get(0)
+//                                        .getTranscript();
+//
+//                                Log.d(RECORD_TAG, "Transcrib text: " + transcript);
+//
+//                            } catch (FileNotFoundException e) {
+//                                e.printStackTrace();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+                        });
+                    }
+                }) .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(CustomerMapActivity.this, "AUDIO TRANSCRIPTION NOT WORKING", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }
 
+    public static byte[] getBytesFromInputStream(InputStream is) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        byte[] buffer = new byte[0xFFFF];
+        for (int len = is.read(buffer); len != -1; len = is.read(buffer)) {
+            os.write(buffer, 0, len);
+        }
+        return os.toByteArray();
+    }
 
     private int radius = 1;
     private Boolean driverFound = false;
