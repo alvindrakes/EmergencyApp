@@ -37,6 +37,7 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.arasthel.asyncjob.AsyncJob;
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -86,6 +87,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -123,7 +125,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
     private FusedLocationProviderClient mFusedLocationClient;
 
-    private Button mLogout, mRequest, mSettings, mHistory;
+    private Button mLogout, mRequest, mSettings, mCallMERS,  mHistory;
 
     private LatLng pickupLocation;
     private Boolean requestBol = false;
@@ -184,7 +186,28 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         mLogout = (Button) findViewById(R.id.logout);
         mRequest = (Button) findViewById(R.id.request);
         mSettings = (Button) findViewById(R.id.settings);
+        mCallMERS = (Button) findViewById(R.id.callMERS);
         //mHistory = (Button) findViewById(R.id.history);
+
+        mCallMERS.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Dexter.withActivity(CustomerMapActivity.this)
+                        .withPermission(Manifest.permission.CALL_PHONE)
+                        .withListener(new PermissionListener() {
+                            @Override public void onPermissionGranted(PermissionGrantedResponse response) {
+                                    String number = "999";  // MERS 999 number
+                                    Intent intent = new Intent(Intent.ACTION_CALL);
+                                    intent.setData(Uri.parse("tel:" +number));
+                                    startActivity(intent);
+                            }
+                            @Override public void onPermissionDenied(PermissionDeniedResponse response) { Toast.makeText(CustomerMapActivity.this, "Please grant permission", Toast.LENGTH_SHORT).show();}
+                            @Override public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
+                        }).check();
+            }
+        });
+
 
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -225,7 +248,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                                     Dexter.withActivity(CustomerMapActivity.this)
                                             .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                             .withListener(new PermissionListener() {
-                                                @Override public void onPermissionGranted(PermissionGrantedResponse response) { STORAGE_CODE = 1; }
+                                                @Override public void onPermissionGranted(PermissionGrantedResponse response) {   startRecording();}
                                                 @Override public void onPermissionDenied(PermissionDeniedResponse response) { Toast.makeText(CustomerMapActivity.this, "Please grant permission", Toast.LENGTH_SHORT).show();}
                                                 @Override public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
                                             }).check();
@@ -236,7 +259,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
                     if (AUDIO_CODE == 1 && STORAGE_CODE == 1) {
-                        startRecording();
+
                     } else {
                         Toast.makeText(CustomerMapActivity.this, "Functions are not available", Toast.LENGTH_SHORT).show();
                     }
@@ -372,97 +395,65 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                         final String downloadUrl = uri.toString();
                         Log.d(RECORD_TAG, "Download url:" + downloadUrl);  // download url is correct !!!!
 
-                        AsyncTask.execute(() -> {
-                            filepath.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                                @Override
-                                public void onSuccess(byte[] bytes) {
-                                    Speech speechService = new Speech.Builder(
-                                            AndroidHttp.newCompatibleTransport(),
-                                            new AndroidJsonFactory(),
-                                            null
-                                    ).setSpeechRequestInitializer(
-                                            new SpeechRequestInitializer(CLOUD_API_KEY))
-                                            .build();
-                                    RecognitionConfig recognitionConfig = new RecognitionConfig();
-                                    recognitionConfig.setLanguageCode("en-US");
-                                    RecognitionAudio recognitionAudio = new RecognitionAudio();
-                                    recognitionAudio.setContent(bytes.toString());
+                        new AsyncJob.AsyncJobBuilder<Boolean>()
+                                .doInBackground(new AsyncJob.AsyncAction<Boolean>() {
+                                    @Override
+                                    public Boolean doAsync() {
+                                        // Do some background work
+                                        filepath.getFile(uri).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                                            @Override
+                                            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
 
-                                    // Create request
-                                    SyncRecognizeRequest request = new SyncRecognizeRequest();
-                                    request.setConfig(recognitionConfig);
-                                    request.setAudio(recognitionAudio);
+                                                Task<Uri> audioUrlTask = taskSnapshot.getStorage().getDownloadUrl();
+                                                while (!audioUrlTask.isSuccessful());
+                                                Uri downloadUrl = audioUrlTask.getResult();
 
-                                    // Generate response
-                                    SyncRecognizeResponse response = null;
-                                    try {
-                                        response = speechService.speech()
-                                                .syncrecognize(request)
-                                                .execute();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                        Log.d(RECORD_TAG, "Sync regconize response not working ");
+                                                Speech speechService = new Speech.Builder(
+                                                        AndroidHttp.newCompatibleTransport(),
+                                                        new AndroidJsonFactory(),
+                                                        null
+                                                ).setSpeechRequestInitializer(
+                                                        new SpeechRequestInitializer(CLOUD_API_KEY))
+                                                        .build();
+                                                RecognitionConfig recognitionConfig = new RecognitionConfig();
+                                                recognitionConfig.setLanguageCode("en-US");
+                                                RecognitionAudio recognitionAudio = new RecognitionAudio();
+                                                recognitionAudio.setContent(downloadUrl.toString());
+
+                                                // Create request
+                                                SyncRecognizeRequest request = new SyncRecognizeRequest();
+                                                request.setConfig(recognitionConfig);
+                                                request.setAudio(recognitionAudio);
+
+                                                // Generate response
+                                                SyncRecognizeResponse response = null;
+                                                try {
+                                                    response = speechService.speech()
+                                                            .syncrecognize(request)
+                                                            .execute();
+                                                } catch (IOException e) {
+                                                    e.printStackTrace();
+                                                    Log.d(RECORD_TAG, "Sync regconize response not working ");
+                                                }
+
+                                                // Extract transcript
+                                                SpeechRecognitionResult result = response.getResults().get(0);
+                                                final String transcript = result.getAlternatives().get(0)
+                                                        .getTranscript();
+
+                                                Log.d(RECORD_TAG, "Transcribed text: " + transcript);
+                                            }
+                                        });
+                                        return true;
                                     }
+                                })
+                                .doWhenFinished(new AsyncJob.AsyncResultAction<Boolean>() {
+                                    @Override
+                                    public void onResult(Boolean result) {
+                                        Toast.makeText(CustomerMapActivity.this, "Result was: " + result, Toast.LENGTH_SHORT).show();
+                                    }
+                                }).create().start();
 
-                                    // Extract transcript
-                                    SpeechRecognitionResult result = response.getResults().get(0);
-                                    final String transcript = result.getAlternatives().get(0)
-                                            .getTranscript();
-
-                                    Log.d(RECORD_TAG, "Transcribed text: " + transcript);
-                                }
-                            }).addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception exception) {
-                                    Log.d(RECORD_TAG, "file bytes are not downloaded   ");
-                                }
-                            });
-
-
-//                            try {
-//
-//                                byte[] audioData = getBytesFromInputStream(stream);
-//
-//                                Speech speechService = new Speech.Builder(
-//                                        AndroidHttp.newCompatibleTransport(),
-//                                        new AndroidJsonFactory(),
-//                                        null
-//                                ).setSpeechRequestInitializer(
-//                                        new SpeechRequestInitializer(CLOUD_API_KEY))
-//                                        .build();
-//                                RecognitionConfig recognitionConfig = new RecognitionConfig();
-//                                recognitionConfig.setLanguageCode("en-US");
-//                                RecognitionAudio recognitionAudio = new RecognitionAudio();
-//                                recognitionAudio.setContent(audioData.toString());
-//
-//                                // Create request
-//                                SyncRecognizeRequest request = new SyncRecognizeRequest();
-//                                request.setConfig(recognitionConfig);
-//                                request.setAudio(recognitionAudio);
-//
-//                                // Generate response
-//                                SyncRecognizeResponse response = null;
-//                                try {
-//                                    response = speechService.speech()
-//                                            .syncrecognize(request)
-//                                            .execute();
-//                                } catch (IOException e) {
-//                                    e.printStackTrace();
-//                                }
-//
-//                                // Extract transcript
-//                                SpeechRecognitionResult result = response.getResults().get(0);
-//                                final String transcript = result.getAlternatives().get(0)
-//                                        .getTranscript();
-//
-//                                Log.d(RECORD_TAG, "Transcrib text: " + transcript);
-//
-//                            } catch (FileNotFoundException e) {
-//                                e.printStackTrace();
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-                        });
                     }
                 }) .addOnFailureListener(new OnFailureListener() {
                     @Override

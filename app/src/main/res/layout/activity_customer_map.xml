@@ -109,6 +109,13 @@
                 <!--android:id="@+id/history"-->
                 <!--android:text="history"/>-->
                 <Button
+                    android:id="@+id/callMERS"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="call 999" />
+
+                <Button
                     android:id="@+id/settings"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"

@@ -49,6 +49,8 @@ dependencies {
     implementation 'com.google.android.gms:play-services-places:16.0.0'
     implementation 'com.google.android.gms:play-services-vision:17.0.2'
     implementation 'com.karumi:dexter:5.0.0'
+    implementation 'com.arasthel:asyncjob-library:1.0.3'
+
 
     // google cloud to text api
     implementation 'com.google.api-client:google-api-client-android:1.22.0'
