@@ -40,6 +40,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -343,7 +344,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         }
 
     ProgressDialog pd;
-
     private class JsonTask extends AsyncTask<String, String, String> {
 
         protected void onPreExecute() {
@@ -411,35 +411,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
             Log.d(RECORD_TAG, "onPostExecute: " + result);
         }
     }
-
-
-//    private HttpResponse getHttpsData(String transcribedText) {
-//        HttpResponse response = null;
-//        try {
-//            HttpClient client = new DefaultHttpClient();
-//            HttpGet request = new HttpGet();
-//
-//           String removeWhiteSpaceText = transcribedText.replaceAll("\\s+","");
-//            request.setURI(new URI("https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/a7f254ec-7157-4f0e-96b9-fd2d2ef16e00?verbose=true&timezoneOffset=-360&subscription-key=8dc2333b797c41b5885924b129fa18a2&q=" + removeWhiteSpaceText));
-//            response = client.execute(request);
-//
-//            String websiteData = request.toString();
-//
-//            Log.d(RECORD_TAG, websiteData);
-//            Log.d(RECORD_TAG, "getHttpsData: " + response);
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//        } catch (ClientProtocolException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//        return response;
-//    }
-
-
 
 
 //    private void startRecording() {
@@ -973,8 +944,8 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
                     LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
 
-                    //mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                    //mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+                    float zoomLevel = 16.0f; //This goes up to 21
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
                     if(!getDriversAroundStarted)
                         getDriversAround();
                 }
