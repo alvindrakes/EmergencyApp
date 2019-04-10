@@ -29,7 +29,6 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.arasthel.asyncjob.AsyncJob;
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -67,11 +66,9 @@ import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -80,8 +77,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,13 +117,14 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private int AUDIO_CODE = 0;
     private int STORAGE_CODE = 0;
     private StorageReference mStorage;
-    private String base64EncodedData;
     private StorageReference filepath = null;
     private final static String RECORD_TAG = "transcribing audio phase";
 
 
     private final int REQUEST_SPEECH_RECOGNIZER = 3000;
-
+    Double currentLatitude, currentLongitude;
+    private String emergencyPlaceName = "";
+    private boolean cameraFirstTime = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -303,7 +299,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
             }
         });
 
-
         mSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -312,6 +307,32 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                 return;
             }
         });
+    }
+
+    public void getEmergencyPlaces() {
+
+        if (emergencyPlaceName.equals("None")) {
+            Toast.makeText(this, "Sorry, no emergency is found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+            StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+            stringBuilder.append("location=").append(currentLatitude).append(",").append(currentLongitude);
+            stringBuilder.append("&radius=" + 40000);
+            stringBuilder.append("&types=").append(emergencyPlaceName);
+            stringBuilder.append("&sensor=true");
+            stringBuilder.append("&key=").append(getResources().getString(R.string.google_places_key));
+
+            String url = stringBuilder.toString();
+        Log.d(RECORD_TAG, "URL for places: " + url);
+
+            Object dataTransfer[] = new Object[2];
+            dataTransfer[0] = mMap;
+            dataTransfer[1] = url;
+
+            GetRequiredPlaces getRequiredPlaces = new GetRequiredPlaces(this);
+            getRequiredPlaces.execute(dataTransfer);
+
     }
 
     private void startSpeechRecognizer() {
@@ -339,7 +360,6 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
                 //appendLog(results.get(0).toString());
                 mRequest.setText("CALL FOR EMERGENCY");
-
             }
         }
 
@@ -408,7 +428,22 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
             if (pd.isShowing()){
                 pd.dismiss();
             }
-            Log.d(RECORD_TAG, "onPostExecute: " + result);
+            if (result != null ) {
+                try
+                {
+                    JSONObject parentObject = new JSONObject(result);
+                   // JSONArray resultsArray = parentObject.getJSONArray("topScoringIntent");
+
+                        JSONObject topIntent = parentObject.getJSONObject("topScoringIntent");
+
+                         emergencyPlaceName = topIntent.getString("intent");
+                        Log.d(RECORD_TAG, "emergencyPlaceName: " + emergencyPlaceName);
+                        getEmergencyPlaces();
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -943,9 +978,15 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                     mLastLocation = location;
 
                     LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
+                    currentLatitude = location.getLatitude();
+                    currentLongitude = location.getLongitude();
 
-                    float zoomLevel = 16.0f; //This goes up to 21
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
+                    if (cameraFirstTime) {
+                        cameraFirstTime = false;
+                        float zoomLevel = 16.0f; //This goes up to 21
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
+                    }
+
                     if(!getDriversAroundStarted)
                         getDriversAround();
                 }
