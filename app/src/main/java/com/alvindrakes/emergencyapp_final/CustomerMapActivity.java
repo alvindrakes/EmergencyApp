@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.os.Looper;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -108,7 +109,8 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
     private FusedLocationProviderClient mFusedLocationClient;
 
-    private Button mLogout, mRequest, mSettings, mCallMERS,  mHistory;
+    private Button  mRequest;
+    private FloatingActionButton mCallMERS;
 
     public LatLng pickupLocation;
     private Boolean requestBol = false;
@@ -169,13 +171,13 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
         destinationLatLng = new LatLng(0.0,0.0);
 
-        mDriverInfo = (LinearLayout) findViewById(R.id.driverInfo);
-
-        mDriverProfileImage = (ImageView) findViewById(R.id.driverProfileImage);
-
-        mDriverName = (TextView) findViewById(R.id.driverName);
-        mDriverPhone = (TextView) findViewById(R.id.driverPhone);
-        mDriverCar = (TextView) findViewById(R.id.driverCar);
+//        mDriverInfo = (LinearLayout) findViewById(R.id.driverInfo);
+//
+//        mDriverProfileImage = (ImageView) findViewById(R.id.driverProfileImage);
+//
+//        mDriverName = (TextView) findViewById(R.id.driverName);
+//        mDriverPhone = (TextView) findViewById(R.id.driverPhone);
+//        mDriverCar = (TextView) findViewById(R.id.driverCar);
 
         mRatingBar = (RatingBar) findViewById(R.id.ratingBar);
 
@@ -186,11 +188,8 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 //        mRadioGroup = (RadioGroup) findViewById(R.id.radioGroup);
 //        mRadioGroup.check(R.id.UberX);
 
-        mLogout = (Button) findViewById(R.id.logout);
         mRequest = (Button) findViewById(R.id.request);
-        mSettings = (Button) findViewById(R.id.settings);
-        mCallMERS = (Button) findViewById(R.id.callMERS);
-        //mHistory = (Button) findViewById(R.id.history);
+        mCallMERS = (FloatingActionButton) findViewById(R.id.callMERS);
 
         mCallMERS.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -438,7 +437,7 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
         protected void onPreExecute() {
             super.onPreExecute();
 
-            pd = new ProgressDialog(CustomerMapActivity.this);
+            pd = new ProgressDialog(CustomerMapActivity.this, R.style.MyAlertDialogStyle);
             pd.setMessage("Please wait");
             pd.setCancelable(false);
             pd.show();
