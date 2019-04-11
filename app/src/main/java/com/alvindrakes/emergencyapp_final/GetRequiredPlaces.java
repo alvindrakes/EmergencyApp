@@ -1,5 +1,6 @@
 package com.alvindrakes.emergencyapp_final;
 
+import android.graphics.Camera;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -38,6 +39,8 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
     BufferedReader bufferedReader;
     StringBuilder stringBuilder;
     String data;
+
+    ArrayList<Marker> markerArrayList = new ArrayList<>();
 
     private static String TAG = "Getting places";
 
@@ -80,9 +83,6 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
         Log.d(TAG, "onPostExecute: " + s);
 
         if (s != null ) {
-
-            ArrayList<Marker> markerArrayList = new ArrayList<>();
-
                 try
                 {
                     JSONObject parentObject = new JSONObject(s);
@@ -102,11 +102,16 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
 
                         LatLng latLng = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
 
+                       // DeleteMarkers();
+
                         MarkerOptions markerOptions = new MarkerOptions();
                         markerOptions.snippet("Address: " + vicinity);
                         markerOptions.position(latLng);
 
                         mMap.addMarker(markerOptions).setTitle(emergencyPlaceName);
+
+                        markerArrayList.add(mMap.addMarker(markerOptions));
+                        mMap.animateCamera(CameraUpdateFactory.zoomTo(10)); // zoom out to show markers on map
                     }
 
                 } catch (JSONException e) {
@@ -114,7 +119,16 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
                 }
             }
         }
+
+//    private void DeleteMarkers() {
+//        //Loop through all the markers and remove
+//        for (int i = 0; i < markerArrayList.size(); i++) {
+//          markerArrayList.remove(i);
+//        }
+//    }
 }
+
+
 
 
 
