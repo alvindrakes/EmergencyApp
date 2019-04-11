@@ -2,6 +2,7 @@ package com.alvindrakes.emergencyapp_final;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -28,6 +29,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -97,6 +99,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import android.location.Location;
 import android.support.v7.widget.Toolbar;
 
@@ -214,9 +219,10 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View v) {
 
-                if (requestBol){
-                    //endRide();
-                }else{
+//                if (requestBol){
+//                    //endRide();
+//                    sendHelpNow();
+//                }else{
 //                    int selectId = mRadioGroup.getCheckedRadioButtonId();
 //
 //                    final RadioButton radioButton = (RadioButton) findViewById(selectId);
@@ -311,8 +317,25 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
                    //  getClosestDriver(); // this should be gettin closest em,ergency help
                 }
-            }
         });
+    }
+
+    private void sendHelpNow() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(
+                this, R.style.CustomAlertDialog)
+                .setTitle("EMERGENCY HELP REQUESTED")
+                .setMessage("Your help is on the way!");
+
+        final AlertDialog alert = builder.create();
+        alert.show();
+
+        final Timer timer2 = new Timer();
+        timer2.schedule(new TimerTask() {
+            public void run() {
+                alert.dismiss();
+                timer2.cancel(); //this will cancel the timer of the system
+            }
+        }, 8000); // the timer will count 5 seconds....
     }
 
 //    @Override
@@ -428,6 +451,8 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
                 //appendLog(results.get(0).toString());
                 mRequest.setText("CALL FOR EMERGENCY");
+
+                sendHelpNow();
             }
         }
 
