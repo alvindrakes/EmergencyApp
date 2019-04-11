@@ -1,138 +1,157 @@
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="com.alvindrakes.emergencyapp_final.CustomerLoginActivity" >
+    android:layout_height="match_parent">
 
+    <!--<include-->
+        <!--android:id="@+id/app_bar"-->
+        <!--layout="@layout/app_bar_main"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content" />-->
 
-    <fragment
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <android.support.v4.widget.DrawerLayout
+        android:id="@+id/myDrawer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        tools:openDrawer="start">
 
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_gravity="bottom">
-        <LinearLayout
+        <FrameLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/driverInfo"
-            android:layout_gravity="bottom"
-            android:orientation="horizontal"
-            android:background="@android:color/white"
-            android:visibility="gone">
-            <ImageView
-                android:layout_width="100sp"
-                android:layout_height="100sp"
-                android:id="@+id/driverProfileImage"
-                android:src="@mipmap/ic_default_user"
-                android:padding="20sp"/>
+            android:layout_height="match_parent"
+            tools:context="com.alvindrakes.emergencyapp_final.CustomerLoginActivity" >
+
+            <fragment
+                android:id="@+id/map"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingLeft="40sp">
-                <TextView
-                    android:layout_width="wrap_content"
+                android:layout_gravity="bottom">
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:id="@+id/driverName"
-                    android:paddingBottom="10sp"
-                    android:paddingTop="20sp"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/driverPhone"
-                    android:paddingBottom="10sp"
-                    android:paddingTop="20sp"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/driverCar"
-                    android:paddingBottom="10sp"
-                    android:paddingTop="20sp"/>
-                <RatingBar
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/ratingBar"
-                    android:layout_gravity="center"
-                    android:numStars="5"
-                    android:stepSize="0.1"/>
-            </LinearLayout>
-        </LinearLayout>
-        <LinearLayout
-            android:background="@android:color/white"
-            android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <!--<RadioGroup-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:id="@+id/radioGroup"-->
-                <!--android:orientation="horizontal">-->
-                <!--<RadioButton-->
+                    android:id="@+id/driverInfo"
+                    android:layout_gravity="bottom"
+                    android:orientation="horizontal"
+                    android:background="@android:color/white"
+                    android:visibility="gone">
+                    <ImageView
+                        android:layout_width="100sp"
+                        android:layout_height="100sp"
+                        android:id="@+id/driverProfileImage"
+                        android:src="@mipmap/ic_default_user"
+                        android:padding="20sp"/>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingLeft="40sp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/driverName"
+                            android:paddingBottom="10sp"
+                            android:paddingTop="20sp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/driverPhone"
+                            android:paddingBottom="10sp"
+                            android:paddingTop="20sp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/driverCar"
+                            android:paddingBottom="10sp"
+                            android:paddingTop="20sp"/>
+                        <RatingBar
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/ratingBar"
+                            android:layout_gravity="center"
+                            android:numStars="5"
+                            android:stepSize="0.1"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <LinearLayout
+                    android:background="@android:color/white"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!--<RadioGroup-->
+                    <!--android:layout_width="match_parent"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:id="@+id/radioGroup"-->
+                    <!--android:orientation="horizontal">-->
+                    <!--<RadioButton-->
                     <!--android:layout_width="wrap_content"-->
                     <!--android:layout_height="wrap_content"-->
                     <!--android:text="UberX"-->
                     <!--android:id="@+id/UberX"/>-->
-                <!--<RadioButton-->
+                    <!--<RadioButton-->
                     <!--android:layout_width="wrap_content"-->
                     <!--android:layout_height="wrap_content"-->
                     <!--android:text="UberBlack"-->
                     <!--android:id="@+id/UberBlack"/>-->
-                <!--<RadioButton-->
+                    <!--<RadioButton-->
                     <!--android:layout_width="wrap_content"-->
                     <!--android:layout_height="wrap_content"-->
                     <!--android:text="UberXl"-->
                     <!--android:id="@+id/UberXl"/>-->
-            <!--</RadioGroup>-->
+                    <!--</RadioGroup>-->
 
-            <LinearLayout
-                android:id="@+id/buttons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/buttons"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                <Button
-                    android:id="@+id/logout"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="logout" />
-                <!--<Button-->
-                <!--android:layout_weight="1"-->
-                <!--android:layout_width="0dp"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:id="@+id/history"-->
-                <!--android:text="history"/>-->
-                <Button
-                    android:id="@+id/callMERS"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="call 999" />
+                        <!--<Button-->
+                        <!--android:layout_weight="1"-->
+                        <!--android:layout_width="0dp"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:id="@+id/history"-->
+                        <!--android:text="history"/>-->
+                        <Button
+                            android:id="@+id/callMERS"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="call 999" />
 
-                <Button
-                    android:id="@+id/settings"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Settings" />
+                    </LinearLayout>
+
+                    <Button
+                        android:layout_gravity="bottom"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="call for emergency"
+                        android:id="@+id/request"/>
+                </LinearLayout>
             </LinearLayout>
 
-            <Button
-                android:layout_gravity="bottom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="call for emergency"
-                android:id="@+id/request"/>
-        </LinearLayout>
-    </LinearLayout>
 
+        </FrameLayout>
 
+        <android.support.design.widget.NavigationView
+            android:id="@+id/nav_view"
+            android:background="#3F51B5"
+            app:itemTextColor="#FFF"
+            app:itemIconTint="#FFF"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:fitsSystemWindows="true"
+            app:menu="@menu/my_menu" />
 
-</FrameLayout>
-
+    </android.support.v4.widget.DrawerLayout>
+</RelativeLayout>

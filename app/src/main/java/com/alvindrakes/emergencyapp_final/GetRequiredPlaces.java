@@ -1,13 +1,19 @@
 package com.alvindrakes.emergencyapp_final;
 
+import android.location.Location;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.alvindrakes.emergencyapp_final.directionhelpers.FetchURL;
+import com.alvindrakes.emergencyapp_final.directionhelpers.TaskLoadedCallback;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -73,6 +80,9 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
         Log.d(TAG, "onPostExecute: " + s);
 
         if (s != null ) {
+
+            ArrayList<Marker> markerArrayList = new ArrayList<>();
+
                 try
                 {
                     JSONObject parentObject = new JSONObject(s);
@@ -93,15 +103,18 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
                         LatLng latLng = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
 
                         MarkerOptions markerOptions = new MarkerOptions();
-                        markerOptions.title(vicinity);
+                        markerOptions.snippet("Address: " + vicinity);
                         markerOptions.position(latLng);
 
-                        mMap.addMarker(markerOptions);
+                        mMap.addMarker(markerOptions).setTitle(emergencyPlaceName);
                     }
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-        }
+            }
         }
 }
+
+
+

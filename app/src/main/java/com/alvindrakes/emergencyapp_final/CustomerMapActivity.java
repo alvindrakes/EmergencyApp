@@ -15,11 +15,17 @@ import android.os.Environment;
 import android.os.Looper;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -29,6 +35,8 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alvindrakes.emergencyapp_final.directionhelpers.FetchURL;
+import com.alvindrakes.emergencyapp_final.directionhelpers.TaskLoadedCallback;
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -39,14 +47,18 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 //import com.google.api.services.speech.v1beta1.model.SpeechRecognitionResult;
@@ -79,15 +91,16 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.location.Location;
+import android.support.v7.widget.Toolbar;
 
 
-import static org.apache.commons.io.IOUtils.toByteArray;
-
-
-public class CustomerMapActivity extends FragmentActivity implements OnMapReadyCallback {
+public class CustomerMapActivity extends AppCompatActivity implements OnMapReadyCallback, NavigationView.OnNavigationItemSelectedListener {
 
     private GoogleMap mMap;
     Location mLastLocation;
@@ -97,7 +110,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
     private Button mLogout, mRequest, mSettings, mCallMERS,  mHistory;
 
-    private LatLng pickupLocation;
+    public LatLng pickupLocation;
     private Boolean requestBol = false;
     private Marker pickupMarker;
     private SupportMapFragment mapFragment;
@@ -126,11 +139,28 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private String emergencyPlaceName = "";
     private boolean cameraFirstTime = true;
 
+    // for drawer
+    DrawerLayout myDrawer;
+    ActionBarDrawerToggle myToggle;
+    NavigationView navigationView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_customer_map);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+
+        // for drawer
+        myDrawer = findViewById(R.id.myDrawer);
+        myToggle = new ActionBarDrawerToggle(this, myDrawer, R.string.open, R.string.close);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.bringToFront();
+        navigationView.setNavigationItemSelectedListener(this);
+        myDrawer.addDrawerListener(myToggle);
+        myToggle.syncState();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().show();
+
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -181,26 +211,12 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
             }
         });
 
-
-        mLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(CustomerMapActivity.this, CustomerLoginActivity.class);
-                startActivity(intent);
-                finish();
-                return;
-            }
-        });
-
         mRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 if (requestBol){
-                    // endRide();
-
-
+                    //endRide();
                 }else{
 //                    int selectId = mRadioGroup.getCheckedRadioButtonId();
 //
@@ -298,15 +314,68 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                 }
             }
         });
+    }
 
-        mSettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(CustomerMapActivity.this, CustomerSettingsActivity.class);
-                startActivity(intent);
-                return;
-            }
-        });
+//    @Override
+//    public boolean onMarkerClick(Marker marker) {
+//            Toast.makeText(this, "Marker is clicked", Toast.LENGTH_SHORT).show();
+//            new FetchURL(this).execute(getUrl(pickupMarker.getPosition(), marker.getPosition(), "driving"), "driving");
+//
+//        return false;
+//    }
+//
+//    private String getUrl(LatLng origin, LatLng dest, String directionMode) {
+//        // Origin of route
+//        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
+//        // Destination of route
+//        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
+//        // Mode
+//        String mode = "mode=" + directionMode;
+//        // Building the parameters to the web service
+//        String parameters = str_origin + "&" + str_dest + "&" + mode;
+//        // Output format
+//        String output = "json";
+//        // Building the url to the web service
+//        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.google_maps_key);
+//        return url;
+//    }
+//
+//    private Polyline currentPolyline;
+//    @Override
+//    public void onTaskDone(Object... values) {
+//        if (currentPolyline != null)
+//            currentPolyline.remove();
+//        currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
+//    }
+
+
+    // drawer open & close
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (myToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    //Side Pane navigation items selected
+    public boolean onNavigationItemSelected (MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+
+            case R.id.action_setting:
+                Intent a = new Intent(CustomerMapActivity.this, CustomerSettingsActivity.class);
+                startActivity(a);
+                break;
+
+            case R.id.action_logout:
+                FirebaseAuth.getInstance().signOut();
+                Intent b = new Intent(CustomerMapActivity.this, CustomerLoginActivity.class);
+                startActivity(b);
+                finish();
+                break;
+        }
+        return true;
     }
 
     public void getEmergencyPlaces() {
@@ -332,7 +401,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
             GetRequiredPlaces getRequiredPlaces = new GetRequiredPlaces(this);
             getRequiredPlaces.execute(dataTransfer);
-
+            Toast.makeText(this, "Nearby " + emergencyPlaceName + " are listed on the map", Toast.LENGTH_SHORT).show();
     }
 
     private void startSpeechRecognizer() {
@@ -498,6 +567,8 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 //
 //        uploadAudioFirebase();
 //    }
+
+
 
 
     private void uploadTextFirebase() {
@@ -987,8 +1058,8 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
                     }
 
-                    if(!getDriversAroundStarted)
-                        getDriversAround();
+//                    if(!getDriversAroundStarted)
+//                        getDriversAround();
                 }
             }
         }
@@ -1090,60 +1161,60 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
 
 
-    boolean getDriversAroundStarted = false;
-    List<Marker> markers = new ArrayList<Marker>();
-    private void getDriversAround(){
-        getDriversAroundStarted = true;
-        DatabaseReference driverLocation = FirebaseDatabase.getInstance().getReference().child("driversAvailable");
-
-        GeoFire geoFire = new GeoFire(driverLocation);
-        GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation( mLastLocation.getLatitude(), mLastLocation.getLongitude()), 999999999);
-
-        geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
-            @Override
-            public void onKeyEntered(String key, GeoLocation location) {
-
-                for(Marker markerIt : markers){
-                    if(markerIt.getTag().equals(key))
-                        return;
-                }
-
-                LatLng driverLocation = new LatLng(location.latitude, location.longitude);
-
-                Marker mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLocation).title(key).icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_car)));
-                mDriverMarker.setTag(key);
-
-                markers.add(mDriverMarker);
-
-
-            }
-
-            @Override
-            public void onKeyExited(String key) {
-                for(Marker markerIt : markers){
-                    if(markerIt.getTag().equals(key)){
-                        markerIt.remove();
-                    }
-                }
-            }
-
-            @Override
-            public void onKeyMoved(String key, GeoLocation location) {
-                for(Marker markerIt : markers){
-                    if(markerIt.getTag().equals(key)){
-                        markerIt.setPosition(new LatLng(location.latitude, location.longitude));
-                    }
-                }
-            }
-
-            @Override
-            public void onGeoQueryReady() {
-            }
-
-            @Override
-            public void onGeoQueryError(DatabaseError error) {
-
-            }
-        });
-    }
+//    boolean getDriversAroundStarted = false;
+//    List<Marker> markers = new ArrayList<Marker>();
+//    private void getDriversAround(){
+//        getDriversAroundStarted = true;
+//        DatabaseReference driverLocation = FirebaseDatabase.getInstance().getReference().child("driversAvailable");
+//
+//        GeoFire geoFire = new GeoFire(driverLocation);
+//        GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation( mLastLocation.getLatitude(), mLastLocation.getLongitude()), 999999999);
+//
+//        geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
+//            @Override
+//            public void onKeyEntered(String key, GeoLocation location) {
+//
+//                for(Marker markerIt : markers){
+//                    if(markerIt.getTag().equals(key))
+//                        return;
+//                }
+//
+//                LatLng driverLocation = new LatLng(location.latitude, location.longitude);
+//
+//                Marker mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLocation).title(key).icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_car)));
+//                mDriverMarker.setTag(key);
+//
+//                markers.add(mDriverMarker);
+//
+//
+//            }
+//
+//            @Override
+//            public void onKeyExited(String key) {
+//                for(Marker markerIt : markers){
+//                    if(markerIt.getTag().equals(key)){
+//                        markerIt.remove();
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void onKeyMoved(String key, GeoLocation location) {
+//                for(Marker markerIt : markers){
+//                    if(markerIt.getTag().equals(key)){
+//                        markerIt.setPosition(new LatLng(location.latitude, location.longitude));
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void onGeoQueryReady() {
+//            }
+//
+//            @Override
+//            public void onGeoQueryError(DatabaseError error) {
+//
+//            }
+//        });
+//    }
 }
