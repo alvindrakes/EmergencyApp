@@ -39,8 +39,7 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
     BufferedReader bufferedReader;
     StringBuilder stringBuilder;
     String data;
-
-    ArrayList<Marker> markerArrayList = new ArrayList<>();
+    Marker markerName;
 
     private static String TAG = "Getting places";
 
@@ -85,10 +84,14 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
         if (s != null ) {
                 try
                 {
+
+                    mMap.clear();  // clear all markers when creating new one
+
                     JSONObject parentObject = new JSONObject(s);
                     JSONArray resultsArray = parentObject.getJSONArray("results");
 
                     for (int i = 0; i < resultsArray.length(); i++) {
+
                         JSONObject jsonObject = resultsArray.getJSONObject(i);
                         JSONObject locationObject = jsonObject.getJSONObject("geometry").getJSONObject("location");
 
@@ -102,15 +105,7 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
 
                         LatLng latLng = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
 
-                       // DeleteMarkers();
-
-                        MarkerOptions markerOptions = new MarkerOptions();
-                        markerOptions.snippet("Address: " + vicinity);
-                        markerOptions.position(latLng);
-
-                        mMap.addMarker(markerOptions).setTitle(emergencyPlaceName);
-
-                        markerArrayList.add(mMap.addMarker(markerOptions));
+                        mMap.addMarker(new MarkerOptions().snippet("Address: " + vicinity).position(latLng).title(emergencyPlaceName));
                         mMap.animateCamera(CameraUpdateFactory.zoomTo(10)); // zoom out to show markers on map
                     }
 
@@ -119,13 +114,6 @@ public class GetRequiredPlaces extends AsyncTask<Object, String, String> {
                 }
             }
         }
-
-//    private void DeleteMarkers() {
-//        //Loop through all the markers and remove
-//        for (int i = 0; i < markerArrayList.size(); i++) {
-//          markerArrayList.remove(i);
-//        }
-//    }
 }
 
 
