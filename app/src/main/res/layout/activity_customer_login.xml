@@ -8,22 +8,29 @@
     android:orientation="vertical">
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="70dp"
+        android:backgroundTint="#3F51B5"
         android:hint="email"
         android:id="@+id/email"/>
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="70dp"
+        android:backgroundTint="#3F51B5"
         android:hint="password"
         android:id="@+id/password"/>
     <Button
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
         android:text="login"
+        android:layout_height="70dp"
+        app:backgroundTint="#203091"
+        android:textColor="#FFF"
         android:id="@+id/login"/>
     <Button
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:text="Register"
+        android:layout_height="70dp"
+        app:backgroundTint="#203091"
+        android:textColor="#FFF"
         android:id="@+id/registration"/>
 </LinearLayout>

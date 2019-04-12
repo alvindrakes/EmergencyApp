@@ -168,30 +168,17 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().show();
 
-
+        // for maps
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
         destinationLatLng = new LatLng(0.0,0.0);
-
-//        mDriverInfo = (LinearLayout) findViewById(R.id.driverInfo);
-//
-//        mDriverProfileImage = (ImageView) findViewById(R.id.driverProfileImage);
-//
-//        mDriverName = (TextView) findViewById(R.id.driverName);
-//        mDriverPhone = (TextView) findViewById(R.id.driverPhone);
-//        mDriverCar = (TextView) findViewById(R.id.driverCar);
 
         mRatingBar = (RatingBar) findViewById(R.id.ratingBar);
 
         mFilename = Environment.getExternalStorageDirectory().getAbsolutePath();
         mFilename += "/transcribed_text.txt";
         mStorage = FirebaseStorage.getInstance().getReference();
-
-//        mRadioGroup = (RadioGroup) findViewById(R.id.radioGroup);
-//        mRadioGroup.check(R.id.UberX);
 
         mRequest = (Button) findViewById(R.id.request);
         mCallMERS = (FloatingActionButton) findViewById(R.id.callMERS);
@@ -219,10 +206,6 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View v) {
 
-//                if (requestBol){
-//                    //endRide();
-//                    sendHelpNow();
-//                }else{
 //                    int selectId = mRadioGroup.getCheckedRadioButtonId();
 //
 //                    final RadioButton radioButton = (RadioButton) findViewById(selectId);
@@ -315,7 +298,6 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
                     mRequest.setText("Getting Help now....");
 
-                   //  getClosestDriver(); // this should be gettin closest em,ergency help
                 }
         });
     }
@@ -424,6 +406,11 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             GetRequiredPlaces getRequiredPlaces = new GetRequiredPlaces(this);
             getRequiredPlaces.execute(dataTransfer);
             Toast.makeText(this, "Nearby " + emergencyPlaceName + " are listed on the map", Toast.LENGTH_SHORT).show();
+
+            // store the help being deployed
+            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            DatabaseReference locationRef = FirebaseDatabase.getInstance().getReference("emergencyHelpDeployed");
+            locationRef.child("helpDeployed").child(userId).setValue(emergencyPlaceName);
     }
 
     private void startSpeechRecognizer() {
@@ -453,7 +440,8 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
                 mRequest.setText("CALL FOR EMERGENCY");
 
                 sendHelpNow();
-            }
+
+        }
         }
 
     ProgressDialog pd;
