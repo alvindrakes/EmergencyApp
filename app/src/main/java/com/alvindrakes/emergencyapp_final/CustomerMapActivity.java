@@ -397,7 +397,7 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             stringBuilder.append("&key=").append(getResources().getString(R.string.google_places_key));
 
             String url = stringBuilder.toString();
-        Log.d(RECORD_TAG, "URL for places: " + url);
+            Log.d(RECORD_TAG, "URL for places: " + url);
 
             Object dataTransfer[] = new Object[2];
             dataTransfer[0] = mMap;
@@ -411,6 +411,8 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
             DatabaseReference locationRef = FirebaseDatabase.getInstance().getReference("emergencyHelpDeployed");
             locationRef.child("helpDeployed").child(userId).setValue(emergencyPlaceName);
+
+            sendHelpNow();
     }
 
     private void startSpeechRecognizer() {
@@ -438,9 +440,6 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
 
                 //appendLog(results.get(0).toString());
                 mRequest.setText("CALL FOR EMERGENCY");
-
-                sendHelpNow();
-
         }
         }
 
