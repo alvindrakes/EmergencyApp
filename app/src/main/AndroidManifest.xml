@@ -51,10 +51,6 @@
         <activity
             android:screenOrientation="portrait"
             android:name=".CustomerLoginActivity">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
         </activity>
         <activity
             android:screenOrientation="portrait"
@@ -62,6 +58,13 @@
         <activity
             android:screenOrientation="portrait"
             android:name=".CustomerSettingsActivity" />
+        <activity android:name=".SplashScreen"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
