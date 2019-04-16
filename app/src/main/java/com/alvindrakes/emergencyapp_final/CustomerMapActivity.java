@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.media.MediaRecorder;
@@ -176,6 +177,11 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View v) {
 
+                String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
+                GeoFire geoFire = new GeoFire(ref);
+                geoFire.setLocation(userId, new GeoLocation(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+
                 Dexter.withActivity(CustomerMapActivity.this)
                         .withPermission(Manifest.permission.CALL_PHONE)
                         .withListener(new PermissionListener() {
@@ -194,16 +200,6 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
         mRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-//                    int selectId = mRadioGroup.getCheckedRadioButtonId();
-//
-//                    final RadioButton radioButton = (RadioButton) findViewById(selectId);
-//
-//                    if (radioButton.getText() == null){
-//                        return;
-//                    }
-//
-//                    requestService = radioButton.getText().toString();
 
                     // record audio for limited amount of time
                     Dexter.withActivity(CustomerMapActivity.this)
@@ -316,7 +312,44 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
     public void getEmergencyPlaces() {
 
         if (emergencyPlaceName.equals("None")) {
-            Toast.makeText(this, "Sorry, no emergency is found", Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder alertDialog = new AlertDialog.Builder(CustomerMapActivity.this, R.style.MyAlertDialogStyle);
+
+            // Setting Dialog Title
+            alertDialog.setTitle("Unclear / No Emergency Found");
+
+            // Setting Dialog Message
+            alertDialog.setMessage("Do you want to call MERS 999 directly?");
+
+            // Setting Positive "Yes" Button
+            alertDialog.setPositiveButton("YES",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,int which) {
+                            Dexter.withActivity(CustomerMapActivity.this)
+                                    .withPermission(Manifest.permission.CALL_PHONE)
+                                    .withListener(new PermissionListener() {
+                                        @Override public void onPermissionGranted(PermissionGrantedResponse response) {
+                                            String number = "999";  // MERS 999 number
+                                            Intent intent = new Intent(Intent.ACTION_CALL);
+                                            intent.setData(Uri.parse("tel:" +number));
+                                            startActivity(intent);
+                                        }
+                                        @Override public void onPermissionDenied(PermissionDeniedResponse response) { Toast.makeText(CustomerMapActivity.this, "Please grant permission", Toast.LENGTH_SHORT).show();}
+                                        @Override public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
+                                    }).check();
+                        }
+                    });
+            // Setting Negative "NO" Button
+            alertDialog.setNegativeButton("NO",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Write your code here to execute after dialog
+                            Toast.makeText(getApplicationContext(), "Emergency request is canceled", Toast.LENGTH_SHORT).show();
+                            dialog.cancel();
+                        }
+                    });
+
+            // Showing Alert Message
+            alertDialog.show();
             return;
         }
 
@@ -566,6 +599,7 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
     }
 
     LocationCallback mLocationCallback = new LocationCallback(){
