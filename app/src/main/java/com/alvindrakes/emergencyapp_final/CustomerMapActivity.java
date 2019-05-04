@@ -600,6 +600,9 @@ public class CustomerMapActivity extends AppCompatActivity implements OnMapReady
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+        mMap.setMyLocationEnabled(true);
+
     }
 
     LocationCallback mLocationCallback = new LocationCallback(){
