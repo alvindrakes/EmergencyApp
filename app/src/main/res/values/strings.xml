@@ -7,8 +7,8 @@
     <string name="close">Close</string>
 
     <string name="action_settings">Setting</string>
-    <string name="google_maps_key">AIzaSyBOdewjvLRdSX1KCfds3jMUX9ZUV9kMrPk</string>
-    <string name="google_places_key">AIzaSyAul8_AG3Df5cAE-y0x3T_bHxeayu0mnpY</string>
+    <string name="google_maps_key"> Generate your own API key here </string>
+    <string name="google_places_key"> Generate your own API key here </string>
     <string name="title_activity_maps">Map</string>
     <string name="logout">Logout</string>
 </resources>
