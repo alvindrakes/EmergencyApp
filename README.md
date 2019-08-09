@@ -9,4 +9,4 @@
 - Log in and sign up using Firebase 
 
 ## App screenshots 
-![alt text](https://raw.githubusercontent.com/alvindrakes/EmergencyApp/emergencyapp_screenshot.png)
+![](emergencyapp_screenshot.png)
